@@ -33,9 +33,15 @@
     }
     connect() {
       this.stop();
-      const s = this.settings;
+      const s = { ...this.settings };
+      if (!s.brokerHost && location.protocol === 'http:') {
+        s.brokerProtocol = 'ws';
+        s.brokerHost = location.hostname || 'localhost';
+        s.brokerPort = 9001;
+        s.brokerPath = '/mqtt';
+      }
       if (!s.brokerHost) return this.state(false, 'Broker belum diatur');
-      if (!window.mqtt) return this.state(false, 'mqtt.js gagal dimuat; periksa internet');
+      if (!window.mqtt) return this.state(false, 'mqtt.min.js gagal dimuat');
       if (location.protocol === 'https:' && s.brokerProtocol !== 'wss') return this.state(false, 'HTTPS memerlukan broker WSS');
       const generation = this.generation;
       this.state(false, 'Menghubungkan ke broker…');
