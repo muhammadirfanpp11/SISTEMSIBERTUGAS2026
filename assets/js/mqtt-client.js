@@ -4,8 +4,13 @@
   function parseTelemetry(raw) {
     const d = JSON.parse(raw);
     if (!d || typeof d !== 'object' || Array.isArray(d)) throw new Error('Objek JSON diperlukan.');
-    for (const [key, min, max] of [['temperature', -40, 80], ['humidity', 0, 100], ['smoke', 0, 100000], ['setpoint', 0, 80], ['smokeThreshold', 1, 100000]]) {
+    for (const [key, min, max] of [['temperature', -40, 80], ['humidity', 0, 100], ['smoke', 0, 500000], ['setpoint', 0, 80], ['smokeThreshold', 1, 100000]]) {
       if (typeof d[key] !== 'number' || !Number.isFinite(d[key]) || d[key] < min || d[key] > max) throw new Error(`Nilai ${key} tidak valid.`);
+    }
+    for (const key of ['lpg', 'co']) {
+      if (d[key] !== undefined && (typeof d[key] !== 'number' || !Number.isFinite(d[key]) || d[key] < 0 || d[key] > 500000)) {
+        throw new Error(`Nilai ${key} tidak valid.`);
+      }
     }
     if (!Number.isSafeInteger(d.ts) || d.ts < 1000000000000 || d.ts > Date.now() + 60000) throw new Error('ts harus berupa epoch milidetik; periksa jam ESP32.');
     if (typeof d.id !== 'string' || !d.id.length || d.id.length > 100) throw new Error('id sampel diperlukan.');
@@ -16,7 +21,7 @@
       const a = d.actuators;
       if (!a || ![0, 45, 90].includes(a.servo) || typeof a.buzzer !== 'boolean' || !['green', 'yellow', 'red'].includes(a.led)) throw new Error('Data aktuator tidak valid.');
     }
-    return { ...d, source: 'device', replay: d.replay === true };
+    return { ...d, lpg: d.lpg ?? 0, co: d.co ?? 0, source: 'device', replay: d.replay === true };
   }
   class MQTTClient extends EventTarget {
     constructor(settings) { super(); this.settings = settings; this.client = null; this.online = false; this.generation = 0; this.lastTimestamp = 0; this.lastErrorAt = 0; }

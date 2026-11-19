@@ -96,7 +96,6 @@
       if (!this.config.telegramEnabled) return;
       const key = typeof data.alertId === 'string' ? data.alertId : data.id;
       if (this.sent.has(key)) return;
-      // Keep one pending emergency; newer incidents replace an unsent older one.
       if (this.pending && this.pending.key !== key) log('Antrean Telegram diganti dengan kejadian darurat terbaru.', 'warning');
       this.pending = { key, data, expires: Date.now() + 300000 };
       this.status = 'Menunggu pengiriman'; this.tick();
@@ -121,7 +120,7 @@
         const timeout = setTimeout(() => this.controller.abort(), 10000);
         try {
           const d = job.data;
-          const text = `DARURAT ThermoGuard-CPS\nAsap/gas melampaui ambang.\nSuhu: ${d.temperature} °C\nAsap: ${d.smoke} ppm\nAmbang asap: ${d.smokeThreshold} ppm\nTerdeteksi: ${new Date(d.ts).toLocaleString('id-ID')}\nPeriksa ruang server dan telemetri aktuator.`;
+          const text = `DARURAT ThermoGuard-CPS\nAsap/gas melampaui ambang.\nSuhu: ${d.temperature} °C\nAsap: ${d.smoke} ppm\nLPG: ${d.lpg ?? 0} ppm | CO: ${d.co ?? 0} ppm\nAmbang asap: ${d.smokeThreshold} ppm\nTerdeteksi: ${new Date(d.ts).toLocaleString('id-ID')}\nPeriksa ruang server dan telemetri aktuator.`;
           const response = await fetch(`https://api.telegram.org/bot${s.telegramToken}/sendMessage`, {
             method: 'POST', body: new URLSearchParams({ chat_id: s.telegramChatId, text }), signal: this.controller.signal
           });
@@ -163,7 +162,7 @@
     source = data.source;
     const modeKey = `${source}:${mode}`;
     if (lastDisplayMode !== modeKey) {
-      log(`${demo ? 'Simulasi' : 'Perangkat'}: ${mode === 'NORMAL' ? 'kondisi NORMAL' : mode === 'WARNING' ? 'WARNING · suhu melewati setpoint' : 'CRITICAL · asap melewati ambang'}.`, mode === 'NORMAL' ? 'success' : 'warning');
+      log(`${demo ? 'Simulasi' : 'Perangkat'}: ${mode === 'NORMAL' ? 'kondisi NORMAL' : mode === 'WARNING' ? 'WARNING · suhu/asap melewati batas waspada' : 'CRITICAL · suhu/asap melewati ambang darurat'}.`, mode === 'NORMAL' ? 'success' : 'warning');
       lastDisplayMode = modeKey;
     }
     if (sourceChanged && demo) log('Telemetri tidak tersedia. Data contoh ditampilkan; kondisi ESP32 belum diketahui.', 'warning');
@@ -171,8 +170,8 @@
     $('modeName').textContent = mode;
     $('modeDescription').textContent = {
       NORMAL: 'Suhu dan level asap berada di bawah batas proteksi.',
-      WARNING: 'Suhu melewati setpoint. Ventilasi perlu dibuka sebagian.',
-      CRITICAL: 'Asap/gas melewati ambang. Periksa ruang server segera.'
+      WARNING: 'Suhu atau level asap melewati batas waspada. Ventilasi perlu dibuka sebagian.',
+      CRITICAL: 'Suhu tinggi atau asap/gas melewati ambang darurat. Periksa ruang server segera.'
     }[mode];
     $('sourceBadge').textContent = demo ? 'Simulasi · data contoh' : 'Telemetri ESP32';
     $('statusOrigin').textContent = demo ? 'Bukan kondisi perangkat' : 'Dihitung dari sensor';
@@ -181,6 +180,8 @@
     $('lastUpdate').textContent = clock(data.ts); $('lastUpdate').dateTime = new Date(data.ts).toISOString();
     $('temperature').textContent = number(data.temperature, 1); $('humidity').textContent = number(data.humidity, 1);
     $('smoke').textContent = number(data.smoke); $('setpoint').textContent = number(data.setpoint, 1);
+    if ($('lpg')) $('lpg').textContent = number(data.lpg ?? 0);
+    if ($('co')) $('co').textContent = number(data.co ?? 0);
     $('temperatureHint').textContent = `Batas ${number(data.setpoint, 1)} °C`;
     $('smokeHint').textContent = `Ambang ${number(data.smokeThreshold)} ppm`;
     const applied = data.configId === settings.configId;
@@ -254,7 +255,6 @@
       if (deviceBuffer > 0 && data.bufferCount === 0) log('Buffer ESP32 selesai disinkronkan menurut laporan perangkat.', 'success');
       deviceBuffer = data.bufferCount; bufferSeenAt = Date.now();
     }
-    // Replayed/retained history must never trigger a fresh emergency notification.
     if (!data.replay && (!lastDevice || data.ts >= lastDevice.ts)) {
       lastDevice = data;
       if (added && !data.retained && freshDevice()) {
@@ -269,7 +269,7 @@
   function getEmptyDevice() {
     return {
       id: 'empty', source: 'device', ts: Date.now(),
-      temperature: 0, humidity: 0, smoke: 0, setpoint: settings.manualSetpoint,
+      temperature: 0, humidity: 0, smoke: 0, lpg: 0, co: 0, setpoint: settings.manualSetpoint,
       smokeThreshold: settings.smokeThreshold, setpointMode: settings.setpointMode,
       configId: settings.configId, actuators: null
     };
@@ -311,6 +311,5 @@
     telegram.tick(); render(live ? lastDevice : (simulationEnabled ? lastDemo : (lastDevice || getEmptyDevice())));
   }, 1000);
   window.addEventListener('pagehide', () => { mqtt.stop(); telegram.stop(); clearInterval(timer); clearTimeout(demoTimer); });
-  // Back-forward cache restores the document with stopped timers/connections.
   window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 })();
