@@ -5,8 +5,8 @@
   const KEY = 'thermoguard.settings.v1';
   const defaults = Object.freeze({
     brokerHost: '', brokerProtocol: 'wss', brokerPort: 8084, brokerPath: '/mqtt',
-    topic: 'thermoguard/server-01', mqttUsername: '', mqttPassword: '',
-    setpointMode: 'potentiometer', manualSetpoint: 30, smokeThreshold: 400,
+    topic: 'thermoguard', mqttUsername: '', mqttPassword: '',
+    setpointMode: 'potentiometer', manualSetpoint: 30, smokeThreshold: 5000,
     refreshInterval: 2000, telegramEnabled: false, telegramToken: '', telegramChatId: '',
     configId: 'default', updatedAt: 0
   });
