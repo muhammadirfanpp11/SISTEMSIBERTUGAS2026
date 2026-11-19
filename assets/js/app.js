@@ -176,7 +176,8 @@
     }[mode];
     $('sourceBadge').textContent = demo ? 'Simulasi · data contoh' : 'Telemetri ESP32';
     $('statusOrigin').textContent = demo ? 'Bukan kondisi perangkat' : 'Dihitung dari sensor';
-    $('statusSummary').textContent = `Respons target: servo ${TG.outputs[mode].servo}° · buzzer ${TG.outputs[mode].buzzer ? 'aktif' : 'nonaktif'}`;
+    const targetBuzzerText = mode === 'CRITICAL' ? 'aktif terus' : mode === 'WARNING' ? 'putus-putus' : 'nonaktif';
+    $('statusSummary').textContent = `Respons target: servo ${TG.outputs[mode].servo}° · buzzer ${targetBuzzerText}`;
     $('lastUpdate').textContent = clock(data.ts); $('lastUpdate').dateTime = new Date(data.ts).toISOString();
     $('temperature').textContent = number(data.temperature, 1); $('humidity').textContent = number(data.humidity, 1);
     $('smoke').textContent = number(data.smoke); $('setpoint').textContent = number(data.setpoint, 1);
@@ -192,15 +193,17 @@
     tempChart.setData(history); smokeChart.setData(history);
     const a = data.actuators;
     const target = TG.outputs[mode];
-    const mismatch = a && (a.servo !== target.servo || a.buzzer !== target.buzzer || a.led !== target.led);
+    const buzzerActive = a ? (mode === 'WARNING' ? true : Boolean(a.buzzer)) : false;
+    const targetBuzzerActive = mode !== 'NORMAL';
+    const mismatch = a && (a.servo !== target.servo || buzzerActive !== targetBuzzerActive || a.led !== target.led);
     $('actuatorSource').textContent = demo ? 'Respons simulasi' : !a ? 'Belum ada laporan aktuator' : mismatch ? 'Laporan berbeda dari respons target' : 'Dilaporkan oleh ESP32';
     $('servoAngle').textContent = a ? `${a.servo}°` : '—'; $('servoLarge').textContent = a ? `${a.servo}°` : '—';
     $('servoNeedle').style.visibility = a ? 'visible' : 'hidden';
     $('servoNeedle').setAttribute('transform', `rotate(${a?.servo || 0} 100 94)`);
     $('servoGraphic').setAttribute('aria-label', a ? `Sudut servo ${a.servo} derajat` : 'Sudut servo belum diketahui');
     $('servoDescription').textContent = a ? ({ 0: 'Ventilasi tertutup', 45: 'Ventilasi setengah terbuka', 90: 'Ventilasi terbuka penuh' })[a.servo] : 'Menunggu telemetri aktuator';
-    $('buzzerStatus').textContent = a ? a.buzzer ? 'Aktif' : 'Nonaktif' : 'Belum diketahui';
-    $('buzzerStatus').classList.toggle('active-alert', Boolean(a?.buzzer));
+    $('buzzerStatus').textContent = !a ? 'Belum diketahui' : mode === 'WARNING' ? 'Putus-putus' : buzzerActive ? 'Aktif' : 'Nonaktif';
+    $('buzzerStatus').classList.toggle('active-alert', buzzerActive);
     for (const color of ['Green', 'Yellow', 'Red']) {
       const led = $(`led${color}`), on = a?.led === color.toLowerCase();
       led.classList.toggle('is-on', on); led.setAttribute('aria-label', `${led.querySelector('span').textContent}: ${a ? on ? 'menyala' : 'padam' : 'belum diketahui'}`);
