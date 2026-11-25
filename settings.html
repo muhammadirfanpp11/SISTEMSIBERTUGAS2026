@@ -18,6 +18,24 @@
   <header class="site-header"><div class="shell header-inner flex items-center justify-between gap-3"><a href="index.html" class="brand"><span class="brand-mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14.5V5a3 3 0 0 1 6 0v9.5a5 5 0 1 1-6 0Z"/><path d="M12 8v10"/></svg></span><span>ThermoGuard<span class="brand-suffix">-CPS</span></span></a><a href="index.html" class="button active:scale-[0.98]">Monitoring</a></div></header>
   <main id="main" class="shell max-w-7xl mx-auto settings-main">
     <div class="page-heading"><p class="eyebrow">KONFIGURASI SISTEM</p><h1>Pengaturan</h1><p class="muted">Tersimpan di browser ini dan diterapkan saat monitoring dibuka.</p></div>
+    <div id="pinLockBox" class="card form-card" style="margin-bottom:1.25rem;">
+      <div class="form-heading">
+        <span class="section-number">PIN</span>
+        <div>
+          <h2>Kunci akses pengaturan</h2>
+          <p class="muted text-sm">Masukkan PIN untuk membuka atau mengubah konfigurasi sistem.</p>
+        </div>
+      </div>
+      <div class="field">
+        <label for="settingsPinInput">PIN pengaturan</label>
+        <input id="settingsPinInput" type="password" inputmode="numeric" maxlength="12" placeholder="Masukkan PIN" autocomplete="off">
+        <p id="settingsPinStatus" class="field-help" role="status"></p>
+      </div>
+      <div class="flex gap-2" style="margin-top:1rem;">
+        <button id="unlockSettingsBtn" type="button" class="button button-primary">Buka pengaturan</button>
+        <button id="lockSettingsBtn" type="button" class="button" hidden>Kunci kembali</button>
+      </div>
+    </div>
     <form id="settingsForm" class="settings-form" autocomplete="off">
       <div class="grid gap-5 lg:grid-cols-2">
         <section class="card form-card"><div class="form-heading"><span class="section-number">01</span><div><h2>Koneksi MQTT</h2><p class="muted text-sm">Gunakan endpoint WebSocket broker.</p></div></div>

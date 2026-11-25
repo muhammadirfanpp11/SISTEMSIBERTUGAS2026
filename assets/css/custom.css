@@ -700,6 +700,10 @@ canvas {
   background:var(--orange);
 }
 
+.event-item[data-kind=danger] .dot {
+  background:var(--red);
+}
+
 .footer {
   display:flex;
   flex-wrap:wrap;

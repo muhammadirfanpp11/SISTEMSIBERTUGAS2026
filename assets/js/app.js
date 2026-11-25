@@ -162,7 +162,7 @@
     source = data.source;
     const modeKey = `${source}:${mode}`;
     if (lastDisplayMode !== modeKey) {
-      log(`${demo ? 'Simulasi' : 'Perangkat'}: ${mode === 'NORMAL' ? 'kondisi NORMAL' : mode === 'WARNING' ? 'WARNING · suhu/asap melewati batas waspada' : 'CRITICAL · suhu/asap melewati ambang darurat'}.`, mode === 'NORMAL' ? 'success' : 'warning');
+      log(`${demo ? 'Simulasi' : 'Perangkat'}: ${mode === 'NORMAL' ? 'kondisi NORMAL' : mode === 'WARNING' ? 'WARNING · suhu/asap melewati batas waspada' : 'CRITICAL · suhu/asap melewati ambang darurat'}.`, mode === 'NORMAL' ? 'success' : mode === 'CRITICAL' ? 'danger' : 'warning');
       lastDisplayMode = modeKey;
     }
     if (sourceChanged && demo) log('Telemetri tidak tersedia. Data contoh ditampilkan; kondisi ESP32 belum diketahui.', 'warning');
@@ -313,3 +313,4 @@
   window.addEventListener('pagehide', () => { mqtt.stop(); telegram.stop(); clearInterval(timer); clearTimeout(demoTimer); });
   window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 })();
+Analyzing

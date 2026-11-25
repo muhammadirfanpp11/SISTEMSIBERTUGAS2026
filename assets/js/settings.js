@@ -226,4 +226,75 @@
     try { populate(save({ ...defaults })); show('Pengaturan awal dipulihkan. Mode simulasi aktif saat monitoring dibuka.'); }
     catch (error) { show(error.message, true); }
   });
+
+  const SETTINGS_PIN = '123456';
+  const PIN_SESSION_KEY = 'thermoguard.settings.unlocked.v1';
+  const pinBox = document.getElementById('pinLockBox');
+  const pinInput = document.getElementById('settingsPinInput');
+  const pinStatus = document.getElementById('settingsPinStatus');
+  const unlockBtn = document.getElementById('unlockSettingsBtn');
+  const lockBtn = document.getElementById('lockSettingsBtn');
+
+  function isPinUnlocked() {
+    try { return sessionStorage.getItem(PIN_SESSION_KEY) === '1'; }
+    catch (_) { return false; }
+  }
+
+  function setFormLocked(locked) {
+    if (!form) return;
+    Array.from(form.elements).forEach(el => {
+      if (el.name === 'manualSetpoint') {
+        el.disabled = locked || form.elements.setpointMode.value !== 'manual';
+      } else {
+        el.disabled = locked;
+      }
+    });
+    if (lockBtn) lockBtn.hidden = locked;
+    if (unlockBtn) unlockBtn.hidden = !locked;
+    if (pinInput) pinInput.disabled = !locked;
+    if (pinStatus) {
+      pinStatus.textContent = locked
+        ? 'Pengaturan terkunci. Masukkan PIN untuk mengedit atau menyimpan.'
+        : 'Pengaturan terbuka untuk sesi tab ini.';
+    }
+  }
+
+  if (form && pinBox && unlockBtn && pinInput) {
+    setFormLocked(!isPinUnlocked());
+
+    unlockBtn.addEventListener('click', () => {
+      if (pinInput.value.trim() === SETTINGS_PIN) {
+        try { sessionStorage.setItem(PIN_SESSION_KEY, '1'); } catch (_) {}
+        pinInput.value = '';
+        setFormLocked(false);
+        show('PIN benar. Silakan ubah pengaturan lalu klik Simpan pengaturan.');
+      } else {
+        pinStatus.textContent = 'PIN salah. Coba lagi.';
+        show('PIN pengaturan salah.', true);
+      }
+    });
+
+    pinInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        unlockBtn.click();
+      }
+    });
+
+    if (lockBtn) {
+      lockBtn.addEventListener('click', () => {
+        try { sessionStorage.removeItem(PIN_SESSION_KEY); } catch (_) {}
+        setFormLocked(true);
+        show('Pengaturan dikunci kembali.');
+      });
+    }
+
+    const origSave = TG.Settings.save;
+    TG.Settings.save = raw => {
+      if (!isPinUnlocked()) {
+        throw new Error('Masukkan PIN pengaturan terlebih dahulu sebelum menyimpan.');
+      }
+      return origSave(raw);
+    };
+  }
 })();
